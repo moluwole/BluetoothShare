@@ -1,29 +1,22 @@
 package com.orion.yung.bluetoothshare
 
-import android.Manifest
-import android.annotation.TargetApi
+import android.Manifest.permission.RECORD_AUDIO
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.ContactsContract
-import android.support.annotation.RequiresApi
-import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import android.Manifest.permission.RECORD_AUDIO
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-import android.support.v4.content.ContextCompat
-import android.util.Log
 
 
 class MainActivity : AppCompatActivity() {
@@ -58,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun saveVoiceText(): String{
+    fun saveVoiceText(): String {
         return "/" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()) + ".3gp"
     }
 
@@ -76,37 +69,36 @@ class MainActivity : AppCompatActivity() {
         onRecord(mStartRecorder)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray){
-        when(requestCode){
-            RequestPermissionCode -> if(grantResults.size > 0){
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            RequestPermissionCode -> if (grantResults.size > 0) {
                 val StoragePermission: Boolean = grantResults[0] == PackageManager.PERMISSION_GRANTED
                 val RecordPermission: Boolean = grantResults[1] == PackageManager.PERMISSION_GRANTED
-                if(StoragePermission && RecordPermission){
+                if (StoragePermission && RecordPermission) {
                     Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show()
-                }
-                else{
+                } else {
                     Toast.makeText(this, "Permission Denied", Toast.LENGTH_LONG).show()
                 }
             }
         }
     }
 
-    fun checkPermission(): Boolean{
+    fun checkPermission(): Boolean {
         var result: Int = ContextCompat.checkSelfPermission(applicationContext, WRITE_EXTERNAL_STORAGE)
         var result1: Int = ContextCompat.checkSelfPermission(applicationContext, RECORD_AUDIO)
         return result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED
     }
 
-    fun stopRecording(){
+    fun stopRecording() {
         recorder?.stop()
         recorder?.release()
         recorder = null
-        Toast.makeText(applicationContext,"Recording Stopped",Toast.LENGTH_LONG).show()
+        Toast.makeText(applicationContext, "Recording Stopped", Toast.LENGTH_LONG).show()
         mStartRecorder = true
     }
 
-    fun onRecord(start: Boolean){
-        if(start) startRecording()
+    fun onRecord(start: Boolean) {
+        if (start) startRecording()
         else
             stopRecording()
     }
