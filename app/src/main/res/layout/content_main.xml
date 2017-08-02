@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.orion.yung.bluetoothshare.MainActivity"
+    tools:showIn="@layout/activity_main">
+
+  <ImageView
+      android:layout_width="300dp"
+      android:layout_height="350dp"
+      android:layout_centerHorizontal="true"
+      android:layout_centerInParent="true"
+      android:visibility="invisible"
+      android:id="@+id/img_microphone"
+      />
+
+
+</RelativeLayout>
