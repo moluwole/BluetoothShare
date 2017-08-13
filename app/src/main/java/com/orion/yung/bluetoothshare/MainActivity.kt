@@ -9,11 +9,17 @@ import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.DividerItemDecoration
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
+import org.jetbrains.anko.db.classParser
+import org.jetbrains.anko.db.insert
+import org.jetbrains.anko.db.select
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -25,19 +31,22 @@ class MainActivity : AppCompatActivity() {
     companion object {
         val LOG_TAG = "Bluetooth Share: "
         var AudioSavePath: String? = null
+        var AudioFileName: String? = null
         var recorder: MediaRecorder? = null
         var mStartRecorder: Boolean = true
-        var storageDir = File(Environment.getExternalStorageDirectory().absolutePath + "/BluetoothShare")
+        var storageDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath + "/BluetoothShare")
         val RequestPermissionCode = 1
+        val date: String = SimpleDateFormat("EEE MMM dd, yyyy").format(Date())
     }
 
 
     fun startRecording() {
         try {
+            // Snackbar.make(recycler_view, AudioSavePath.toString(), Snackbar.LENGTH_INDEFINITE).show()
             recorder = MediaRecorder()
             recorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
-            recorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            recorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            recorder?.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT)
+            recorder?.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT)
             recorder?.setOutputFile(AudioSavePath)
 
 
@@ -52,7 +61,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun saveVoiceText(): String {
-        return "/" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()) + ".3gp"
+        return SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date()) + ".mp3"
     }
 
     private fun requestPermission() {
@@ -63,10 +72,17 @@ class MainActivity : AppCompatActivity() {
     fun record() {
         if (!checkPermission()) {
             requestPermission()
+            if (!storageDir.exists()) storageDir.mkdirs()
+            AudioFileName = saveVoiceText()
+            AudioSavePath = storageDir.toString() + "/" + AudioFileName
+            onRecord(mStartRecorder)
+        } else {
+            if (!storageDir.exists()) storageDir.mkdirs()
+            AudioFileName = saveVoiceText()
+            AudioSavePath = storageDir.toString() + "/" + AudioFileName
+            onRecord(mStartRecorder)
         }
-        if (!storageDir.exists()) storageDir.mkdir()
-        AudioSavePath = Environment.getExternalStorageDirectory().absolutePath + "/BluetoothShare" + saveVoiceText()
-        onRecord(mStartRecorder)
+
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -94,13 +110,54 @@ class MainActivity : AppCompatActivity() {
         recorder?.release()
         recorder = null
         Toast.makeText(applicationContext, "Recording Stopped", Toast.LENGTH_LONG).show()
-        mStartRecorder = true
+        database.use {
+            insert("files", "filename" to AudioFileName, "filepath" to AudioSavePath, "date_saved" to date)
+        }
+        ReloadUI()
     }
 
+
+    fun ReloadUI() {
+        val myRecyclerView = findViewById<RecyclerView>(R.id.recycler_view)
+        myRecyclerView.adapter = null
+        myRecyclerView.setHasFixedSize(true)
+        val mLayoutManager = LinearLayoutManager(applicationContext)
+        myRecyclerView.layoutManager = mLayoutManager
+
+        val dividerItemDecoration = DividerItemDecoration(
+                myRecyclerView.context,
+                mLayoutManager.orientation)
+        myRecyclerView.addItemDecoration(dividerItemDecoration)
+
+        // Specify an adapter
+
+        var mList: List<Files> = fileData()
+
+        val mAdapter = DataAdapter(mList)
+        myRecyclerView.adapter = mAdapter
+    }
+
+    fun fileData(): List<Files> = database.use {
+        var filesParser = classParser<Files>()
+        select("files").column("_id").column("filename").column("filepath").column("date_saved").parseList(filesParser).toList()
+    }
+
+
     fun onRecord(start: Boolean) {
-        if (start) startRecording()
-        else
-            stopRecording()
+        when (start) {
+            true -> {
+                fab.setImageResource(R.drawable.ic_record_voice_over_24dp)
+                startRecording()
+                mStartRecorder = false
+            }
+            false -> {
+                fab.setImageResource(R.drawable.ic_mic_black_24dp)
+                stopRecording()
+                mStartRecorder = true
+            }
+        }
+
+        //  Toast.makeText(applicationContext, mStartRecorder.toString(), Toast.LENGTH_LONG).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,9 +165,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+        ReloadUI()
         fab.setOnClickListener { _ ->
             record()
-            mStartRecorder = false
         }
     }
 
@@ -125,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+        // R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
         }
     }
